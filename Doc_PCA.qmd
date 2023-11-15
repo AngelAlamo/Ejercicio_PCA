@@ -1,0 +1,14 @@
+---
+title: "Ejercicio PCA"
+format: html
+editor: visual
+---
+
+
+```{r}
+
+datos = read.table("europa.dat")
+
+
+```
+
