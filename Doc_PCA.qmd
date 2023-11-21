@@ -4,11 +4,152 @@ format: html
 editor: visual
 ---
 
+```{r, echo = FALSE, warning=FALSE, message=FALSE}
+library(ggplot2)
+library("factoextra")
+library("ggfortify")
+```
+
+
 
 ```{r}
-
 datos = read.table("europa.dat")
+datos = datos - colMeans(datos)
+```
+
+Consideramos los datos centrados, es decir, restamos a cada valor la media de la columna correspondiente.
+
+
+Antes de reducir el número de variables a partir del método de componentes principales, observemos la matriz de varianzas-covarianzas y la matriz de correlación:
+
+
+```{r}
+S = cov(datos)
+print("Matriz de covarianzas")
+```
+
+
+```{r, echo = FALSE}
+S
+```
+Como los datos corresponden a los porcentajes de población, y por tanto, todas las variables están en una escala común y las diferencias entre las varianzas de las variables son informativas, el estudio utilizando la matriz de covarianzas es correcto. Si miramos la matriz cov-var, vemos que hay un rango muy alto de variablidad, por ejemplo la variable "Agr" presenta una variación de `cov(datos[,1])`, en cambio, variables como "Min", presenta una variación de ` cov(datos[,2])`, que es muy inferior. También hay variables con una varianza no tan extrema, como es el caso de la variable "Fab", con varianza `cov(datos[,3]` y "SSP".
+
+```{r}
+#No me acuerdo como se hacían chunks de línea xd
+```
+
+Por otro lado, la matriz de correlaciones es:
+
+```{r, echo = FALSE}
+R = cor(datos)
+print("Matriz de correlaciones")
+```
+```{r, echo = FALSE}
+R
+```
+
+En cuanto a las correlaciones, parece ser que la variables "Con" presenta mayor tendencia lineal respecto a las demás variables, en particular una asociación negativa, esto se ver con las variables: "Ene", IS" y Fin". Por otro lado, otras correlaciones a destacar son los pares y "SSP" - "TC" también con tendencia negativa, y "Min" - "Ene" y "IS" - "Ene", esta vez con asociación positiva aunque inferior a los otros pares.
+
+
+Una vez visto las matrices, pasamos al estudio de las componentes principales. Siguiendo el método visto en teoría, calculamos los valores y vectores propios de la matriz cov-var.
+
+```{r PCA}
+datos_pca = prcomp(datos, scale = FALSE)
+```
+
+```{r veps}
+veps = datos_pca$rotation
+veps
+```
+
+La primera componente principal le da peso mayoritariamente a la variable "Agr", esto es debido a que su variación es muy superior a las demás. Por otro lado, también le da un cierto peso (aunque con signo contrario) a las variables "Fin" y "TC", además de un peso positivo a la variable "SSP", que se debe considerar debido a la varianza de esta.
+
+La segunda componente principal da un peso prácticamente equitativo, excepto a "TC", aquí destacan "Agr", "Con" (asociado a un peso negativo) y "Ene" (con un peso positivo). 
+
+Por último, la tercera componente principal le da principalmente mayor peso a "Fab" (con peso negativo), "SSP" (también con peso negativo) y "Min" (asociado a un peso positivo).
+
+
+
+```{r vaps}
+vaps = get_eigenvalue(datos_pca)
+vaps
+```
+
+A partir de esta tabla de valores es difícil determinar cuántas componentes principales necesitamos para la descripción de los datos, de manera intuitiva podríamos considerar las tres primeras componentes, que explican el $85\%$ de la variación total. Para ver de una manera más detallada el peso de estas componentes, podemos hacer el siguiente gráfico, donde se muestra un diagrama de barras donde a cada dimensión le asociamos el porcentaje de variación que explica:
+
+
+```{r}
+fviz_eig(datos_pca, addlabels = TRUE, ylim = c(0,100))
+```
+Podemos concluir que la consideración de tres componentes principales es suficiente para la descripción y representación de los datos. Fijémonos que no podemos considerar menos componentes ya que solamente explicarían aproximadamente un $67\%$ de la varaación total, que no es del todo óptimo, aun perdiendo una dimensión.
+
+
+Un detalle importante es la calidad de representación. Por lo comentado anteriormente al observar los pesos asignados a las componentes principales, todas las variables estaban ponderadas (positivamente o negativamente). Si hacemos el gráfico coseno cuadrado, observamos lo siguiente:
+
+
+```{r}
+var = get_pca_var(datos_pca)
+fviz_cos2(datos_pca, choice = "var", axes = 1:3)
+```
+
+Esta diferencia que vemos con la variable "Agr" es debido a su alta varianza, por lo tanto está perfectamente respresentado. En cuanto las otras variables, podemos deducir que su calidad de representación es correcta. Si hacemos un gráfico de círculo de correlación variable, podemos ver qué variables contribuyen más en la variación total, claramente, obtendremos que es principalmente "Agr".
+
+
+```{r circulo correlacion dim1-dim2}
+fviz_pca_var(datos_pca, col.var = "contrib", repel = TRUE, axes = 1:2)
+
+```
+
+(...)
+
+
+
+```{r circulo correlacion dim1-dim3}
+fviz_pca_var(datos_pca, col.var = "contrib", repel = TRUE, axes = c(1,3))
+
+```
+
+
+(...)
+
+
+
+
+
+
+```{r circulo correlacion dim2-dim3}
+fviz_pca_var(datos_pca, col.var = "contrib", repel = TRUE, axes = c(2,3))
+
+```
+
+(...)
+
+
+Por último, veamos si a partir de estas componentes principales hemos podido obtener algunas agrupaciones de países.
+
+```{r}
+autoplot(datos_pca, data = datos, loadings = TRUE, loadings.colour = 'blue',
+         loadings.label = TRUE, loadings.label.size = 3)
 
 
 ```
+
+
+(...)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
