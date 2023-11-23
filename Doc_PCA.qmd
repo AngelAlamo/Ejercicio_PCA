@@ -123,9 +123,9 @@ autoplot(datos_pca, data = datos, loadings = TRUE, loadings.colour = 'blue',
 ```{r Prueba}
 library(ggplot2)
 library("factoextra")
-datos.acp=prcomp(datos, scale = TRUE)
+datos.acp=prcomp(datos, scale = FALSE)
 lambdas=get_eigenvalue(datos.acp)
 var <- get_pca_var(datos.acp)
-fviz_cos2(datos.acp, choice = "var", axes = 1:2)
+fviz_pca_var(datos.acp, col.var = "contrib", repel = TRUE, axes = 1:2, col.circle = "red")
 ```
 
