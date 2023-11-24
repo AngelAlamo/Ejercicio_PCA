@@ -20,14 +20,15 @@ Primero, vamos a cargar los datos del fichero `europa.dat` y consideraremos los 
 
 ```{r cargar datos}
 datos = read.table("europa.dat")
-media = colMeans(datos)
-datos = datos - media
+
+datos_cen = sapply (datos, function (x) scale (x, scale = FALSE ))
+
 ```
 
 Antes de reducir el número de variables a partir del método de componentes principales, observemos la matriz de varianzas-covarianzas y la matriz de correlación:
 
 ```{r matriz covarianzas}
-S = cov(datos)
+S = cov(datos_cen)
 print("Matriz de covarianzas")
 ```
 
@@ -35,12 +36,12 @@ print("Matriz de covarianzas")
 S
 ```
 
-Como los datos corresponden a los porcentajes de población, y por tanto, todas las variables están en una escala común y las diferencias entre las varianzas de las variables son informativas, el estudio utilizando la matriz de covarianzas es correcto. Si miramos la matriz de varianzas-covarianzas, vemos que hay un rango muy alto de variablidad, por ejemplo la variable "Agr" presenta una variación de `r S[1,1]`, en cambio, variables como "Min", presenta una variación de `r S[2,2]`, que es muy inferior. También hay variables con una varianza no tan extrema, como es el caso de la variable "Fab", con varianza `r S[3,3]` y "SSP", con varianza `r S[8,8]`.
+Como los datos corresponden a los porcentajes de población, y por tanto, todas las variables están en una escala común y las diferencias entre las varianzas de las variables son informativas, el estudio utilizando la matriz de covarianzas sin tipificar es correcto. Si miramos la matriz de varianzas-covarianzas, vemos que hay un rango muy alto de variablidad, por ejemplo la variable "Agr" presenta una variación de `r S[1,1]`, en cambio, variables como "Min", presenta una variación de `r S[2,2]`, que es muy inferior. También hay variables con una varianza no tan extrema pero muy pequeña respecto "Agr", como es el caso de la variable "Fab", con varianza `r S[3,3]` y "SSP", con varianza `r S[8,8]`.
 
 Por otro lado, la matriz de correlaciones es:
 
 ```{r matriz correlaciones}
-R = cor(datos)
+R = cor(datos_cen)
 print("Matriz de correlaciones")
 ```
 
@@ -48,12 +49,12 @@ print("Matriz de correlaciones")
 R
 ```
 
-En cuanto a las correlaciones, parece ser que la variables "Con" presenta mayor tendencia lineal respecto a las demás variables, en particular una asociación negativa, esto se ver con las variables: "Ene", IS" y Fin". Por otro lado, otras correlaciones a destacar son los pares y "SSP" - "TC" también con tendencia negativa, y "Min" - "Ene" y "IS" - "Ene", esta vez con asociación positiva aunque inferior a los otros pares.
+En cuanto a las correlaciones, la variable "Agr" es la que presenta más correlación con las otras variables: tenemos una correlacción considerable en cada variable (excepto con "Min"), además, todas estas asociaciones son negativas, las más destacables son `r R[1,3]` con "Fab"; `r R[1,6]` con "Fin" y `r R[1,7]` con "SSP". Por otro lado, respecto a las correlaciones con asociación positiva, tenemos "IS" - "SSP" con una correlación de `r R[6, 8]` y "SSP" - "TC" con `r R[8,9]`.
 
 Una vez visto las matrices, pasamos al estudio de las componentes principales. Siguiendo el método visto en teoría, calculamos los valores y vectores propios de la matriz de varianzas-covarianzas.
 
 ```{r PCA}
-datos_pca = prcomp(datos, scale = FALSE)
+datos_pca = prcomp(datos_cen, scale = FALSE)
 ```
 
 ```{r veps}
@@ -61,91 +62,65 @@ veps = datos_pca$rotation
 veps
 ```
 
-La primera componente principal le da peso mayoritariamente a la variable "Agr", esto es debido a que su variación es muy superior a las demás. Por otro lado, también le da un cierto peso (aunque con signo contrario) a las variables "Fin" y "TC", además de un peso positivo a la variable "SSP", que se debe considerar debido a la varianza de esta.
+La primera componente principal le da peso mayoritariamente a la variable "Agr", esto es debido a que su variación es muy superior a las demás y esto afecta considerablemente en las componentes principales. Por otro lado, también le da un cierto peso (aunque con signo contrario) a las variables "Fab" y "SSP".
 
-La segunda componente principal da un peso prácticamente equitativo, excepto a "TC", aquí destacan "Agr", "Con" (asociado a un peso negativo) y "Ene" (con un peso positivo).
+La segunda componente principal da un peso (positivo) muy diferenciado a la variable "Fab". También, le da un peso (con signo contrario) a la variable "SSP", que en principio ya estaban explicadas por la primera componente.
 
-Por último, la tercera componente principal le da principalmente mayor peso a "Fab" (con peso negativo), "SSP" (también con peso negativo) y "Min" (asociado a un peso positivo).
+Por último, las otras componentes intentan explicar las demás variables que han quedado fuera de estas dos componentes principales o igualmente dando peso a las variables con más varianza, como PC3 dando aún un peso a "SSP", esto proviene de la gran diferencia que presentan las varianzas de nuestras variables, provocando que aquellas con varianza menor no queden representadas y por lo tanto, el estudio, aunque no incorrecto, no es el adecuado.
 
 ```{r vaps}
 vaps = get_eigenvalue(datos_pca)
 vaps
 ```
 
-A partir de esta tabla de valores es difícil determinar cuántas componentes principales necesitamos para la descripción de los datos, de manera intuitiva podríamos considerar las tres primeras componentes, que explican el $85\%$ de la variación total. Para ver de una manera más detallada el peso de estas componentes, podemos hacer el siguiente gráfico, donde se muestra un diagrama de barras donde a cada dimensión le asociamos el porcentaje de variación que explica:
+A partir de esta tabla de valores podemos ver que con solamente dos componentes principales nos permiten explicar aproximadamente el $93\%$ de la variación total. Para ver de una manera más detallada el peso de estas componentes, podemos hacer el siguiente gráfico, donde se muestra un diagrama de barras donde a cada dimensión le asociamos el porcentaje de variación que explica:
 
 ```{r}
 fviz_eig(datos_pca, addlabels = TRUE, ylim = c(0,100))
 ```
 
-Podemos concluir que la consideración de tres componentes principales es suficiente para la descripción y representación de los datos. Fijémonos que no podemos considerar menos componentes ya que solamente explicarían aproximadamente un $67\%$ de la varaación total, que no es del todo óptimo, aun perdiendo una dimensión.
+Como vemos, a partir de la segunda componente no obtenemos un porcentaje necesario, es decir, el porcentaje de variablidad no aumenta lo suficiente como para considerar otra componente principal. Con esto concluimos que es de más utilidad perder varaibilidad pero una mayor facilidad de respresentación con una dimensión menor. Representemos estas variables en el espacio:
 
-Un detalle importante es la calidad de representación. Por lo comentado anteriormente al observar los pesos asignados a las componentes principales, todas las variables estaban ponderadas (positivamente o negativamente). Si hacemos el gráfico coseno cuadrado, observamos lo siguiente:
-
-```{r}
-var = get_pca_var(datos_pca)
-fviz_cos2(datos_pca, choice = "var", axes = 1:3)
-```
-
-Esta diferencia que vemos con la variable "Agr" es debido a su alta varianza, por lo tanto está perfectamente respresentado. En cuanto las otras variables, podemos deducir que su calidad de representación es correcta. Si hacemos un gráfico de círculo de correlación variable, podemos ver qué variables contribuyen más en la variación total, claramente, obtendremos que es principalmente "Agr".
 
 ```{r circulo correlacion dim1-dim2}
 fviz_pca_var(datos_pca, col.var = "contrib", repel = TRUE, axes = 1:2)
 
 ```
 
-(...)
+Con esta representación gráfica, observamos que la contribución de "Agr" es demasiado alta, esto hace que las componentes principales estén afectadas por esta diferencia, haciendo que las otras variables no tengan una calidad de representación correcta, esto nos lleva a realizar el estudio con las variables tipificadas.
 
-```{r circulo correlacion dim1-dim3}
-fviz_pca_var(datos_pca, col.var = "contrib", repel = TRUE, axes = c(1,3))
 
-```
-
-(...)
-
-```{r circulo correlacion dim2-dim3}
-fviz_pca_var(datos_pca, col.var = "contrib", repel = TRUE, axes = c(2,3))
-
-```
-
-(...)
-
-Por último, veamos si a partir de estas componentes principales hemos podido obtener algunas agrupaciones de países.
+Por último, antes del siguiente análisis, veamos si a partir de estas componentes principales hemos podido obtener algunas agrupaciones de países.
 
 ```{r}
-autoplot(datos_pca, data = datos, loadings = TRUE, loadings.colour = 'blue',
+autoplot(datos_pca, data = datos_cen, loadings = TRUE, loadings.colour = 'blue',
          loadings.label = TRUE, loadings.label.size = 3)
 
 
 ```
 
-(...)
+Vemos que aunque no se hayan tipificado los datos, parece haber una agrupación (aunque no muy clara) de los países, estos grupos serían: los países que se encuentran en la parte inferior izquierda; los países que se encuentran en la parte superior izquierd y los países que se encuentran separados en la parte derecha.
+
 
 ```{r Prueba}
-library(ggplot2)
-library("factoextra")
-datos.acp=prcomp(datos, scale = FALSE)
-lambdas=get_eigenvalue(datos.acp)
-var <- get_pca_var(datos.acp)
-fviz_pca_var(datos.acp, col.var = "contrib", repel = TRUE, axes = 1:2, col.circle = "red")
+#library(ggplot2)
+#library("factoextra")
+#datos.acp=prcomp(datos_cen, scale = FALSE)
+#lambdas=get_eigenvalue(datos.acp)
+#var <- get_pca_var(datos.acp)
+#fviz_pca_var(datos.acp, col.var = "contrib", repel = TRUE, axes = 1:2, col.circle = "red")
 ```
 
 
 
 Ahora vamos a realizar el mismo estudio pero con los datos tipificados, veremos que obtenemos los gráficos más acorde a los vistos en el ejemplo de teoria.
 
-Ojo, como teniamos los datos guardados, ya estaban centrados. Para conseguir los datos tipificados necesitamos los datos originales sin centrado y conseguiremos los veps y vaps de estos tipificados con la función `prcomp` especificando `scale = TRUE`
-```{r}
-datos_tip = datos + media
-```
-
+En este caso, especificaremos en la función `prcomp` el parámetro `scale` considerando `scale = TRUE`, para que considere los datos estandarizados.
 
 
 ```{r PCA tipi}
-datos_tip_pca = prcomp(datos_tip, scale = TRUE)
+datos_tip_pca = prcomp(datos, scale = TRUE)
 ```
-
-
 
 
 
@@ -228,8 +203,16 @@ fviz_pca_var(datos_tip_pca, col.var = "contrib", repel = TRUE, axes = c(3,4))
 Por último, veamos si a partir de estas componentes principales hemos podido obtener algunas agrupaciones de países.
 
 ```{r}
-autoplot(datos_tip_pca, data = datos_tip, loadings = TRUE, loadings.colour = 'blue',
+autoplot(datos_tip_pca, data = datos, loadings = TRUE, loadings.colour = 'blue',
          loadings.label = TRUE, loadings.label.size = 4)
 
 
 ```
+
+
+
+
+
+
+
+
