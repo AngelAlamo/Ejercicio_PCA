@@ -122,7 +122,7 @@ Por último, veamos si a partir de estas componentes principales hemos podido ob
 
 ```{r representacion individuos, fig.width=12, fig.height=4}
 rep_ind <- fviz_pca_ind(datos_pca, col.ind = "cos2", repel = TRUE, axes = 1:2,
-                           #geom = "point"
+                           geom = "point"
                            ) 
 
 grid.arrange(rep_ind, circ_cor, ncol = 2)
@@ -130,10 +130,22 @@ grid.arrange(rep_ind, circ_cor, ncol = 2)
 #autoplot(datos_pca, data = datos_cen, loadings = TRUE, loadings.colour = 'blue', loadings.label = TRUE, loadings.label.size = 3, label = TRUE)
 ```
 
+No se puede ver de manera clara agrupaciones entre los países ya que estos parecen seguir una dispersión "uniforme". Nuestra decisión consiste en hacer tres grupos: los países que se encuentran en el segundo cuadrante, los del tercer cuadrante y los que se encuentran a la derecha del eje vertical. Esta agrupación sigue aproximadamente la estructura dada por las variables cuyo vector en el plano es más largo.
+
+Respecto al primer grupo, podemos decir que son países en los que el porcentaje de población que se dedica a la agricultura y a los servicios sociales y personales está por debajo de la media grupal, mientras que el porcentaje dedicado al sector fábricas es superior a la media.
+
+Para el segundo grupo, también son paises que se dedican menos a la agricultura. Pero al contrario que en el primer grupo, son países cuya actividad destaca más en el sector servicios sociales y personales y menos en el sector fábricas.
+
+Por último, el tercer grupo son países que se dedican especialmente a la agricultura, con un porcentaje superior a la media. Destacar el caso de Turquía, que se puede apreciar claramente que es el país que más porcentaje de población dedica a este sector.
+
+Respecto al resto de variables, podemos decir que como no están bien representadas en el plano principal, que agrupa el $93\%$ de la variación de los datos, quiere decir que estas varían muy poco en comparación a las tres variables comparadas, y por lo tanto, en general los países se agrupan en unos ciertos porcentajes.
 
 ```{r Interpretacion Angel 2}
 # Vemos que aunque no se hayan tipificado los datos, parece haber una agrupación (aunque no muy clara) de los países, estos grupos serían: los países que se encuentran en la parte inferior izquierda; los países que se encuentran en la parte superior izquierd y los países que se encuentran separados en la parte derecha.
 ```
+
+Para ver el código del estudio, visite [este repositorio de GitHub.](https://github.com/AngelAlamo/Ejercicio_PCA)
+
 
 
 
