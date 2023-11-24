@@ -15,6 +15,7 @@ library(ggplot2)
 library(factoextra)
 library(ggfortify)
 library(gridExtra)
+library(tidyverse)
 ```
 
 Primero, vamos a cargar los datos del fichero `europa.dat` y consideraremos los datos centrados, es decir, restamos a cada valor la media de la columna correspondiente.
@@ -132,106 +133,129 @@ grid.arrange(rep_ind, circ_cor, ncol = 2)
 
 No se puede ver de manera clara agrupaciones entre los países ya que estos parecen seguir una dispersión "uniforme". Nuestra decisión consiste en hacer tres grupos: los países que se encuentran en el segundo cuadrante, los del tercer cuadrante y los que se encuentran a la derecha del eje vertical. Esta agrupación sigue aproximadamente la estructura dada por las variables cuyo vector en el plano es más largo.
 
+La tabla de datos respecto a las componentes principales es la siguiente:
+
+
+```{r}
+tabla_pca = datos_pca$x[,1:2]
+names = datos[,0]
+tabla_pca = cbind(names, tabla_pca)
+
+tabla_pca
+```
+Estudiaremos los grupos principalmente sobre la variable "Agr", ya que esta presenta con gran diferencia una varianza superior.
+
 Respecto al primer grupo, podemos decir que son países en los que el porcentaje de población que se dedica a la agricultura y a los servicios sociales y personales está por debajo de la media grupal, mientras que el porcentaje dedicado al sector fábricas es superior a la media.
+
+```{r}
+grupo1 = tabla_pca[tabla_pca$PC1 <= 0 & tabla_pca$PC2 >= 0,]
+grupo1
+
+```
+
+Si vemos los valores que toma la variable "Agr", SSP" y "Fab" en estos países:
+
+```{r}
+names_gr1 = rownames(grupo1)
+
+tabla_grupo1 = datos %>%
+  filter(rownames(.) %in% names_gr1)
+
+tabla_grupo1
+
+```
+
+En la variable "Agr": presentan una media muestral `r mean(tabla_grupo1$Agr) `, en cambio, la media muestral global es `r mean(datos$Agr)`, bastante superior,
+
+En la variable "SSP": presentan una media muestral `r mean(tabla_grupo1$SSP) `,por otro lado, la media muestral global es `r mean(datos$SSP)`, que no se notan grandes diferencias aunque es superior.
+
+En la variable "Fab": la media muestral de este grupo es `r mean(tabla_grupo1$Fab) `, si consideramos todos los datos, la media muestral que obtenemos es `r mean(datos$Fab)`, considerablemente menor, como dijimos anteriormente.
+
+
 
 Para el segundo grupo, también son paises que se dedican menos a la agricultura. Pero al contrario que en el primer grupo, son países cuya actividad destaca más en el sector servicios sociales y personales y menos en el sector fábricas.
 
+
+```{r}
+grupo2 = tabla_pca[tabla_pca$PC1 <= 0 & tabla_pca$PC2 <= 0,]
+grupo2
+```
+
+
+```{r}
+names_gr2 = rownames(grupo2)
+
+tabla_grupo2 = datos %>%
+  filter(rownames(.) %in% names_gr2)
+
+tabla_grupo2
+
+```
+
+La media muestral en agricultura de este grupo es de `r mean(tabla_grupo2$Agr)`, de aquí deducimos que este grupo presenta menos dedicación a la agricultura, respecto al grupo anterior (con poca diferencia) y notablemente respecto el total.
+
+Si miramos la variable de Servicios Sociales y Personales: la media muestral es `r mean(tabla_grupo2$SSP) `, superior a las medias muestrales del grupo1 y del global, vistas anteriormente.
+
+Respecto el sector de fábricas, presentan una media muestral de `r mean(tabla_grupo2$Fab) `, inferior a la del grupo1 y aproximada al global.
+
+
 Por último, el tercer grupo son países que se dedican especialmente a la agricultura, con un porcentaje superior a la media. Destacar el caso de Turquía, que se puede apreciar claramente que es el país que más porcentaje de población dedica a este sector.
+
+```{r}
+grupo3 = tabla_pca[tabla_pca$PC1 >= 0,]
+grupo3
+```
+```{r}
+names_gr3 = rownames(grupo3)
+
+tabla_grupo3 = datos %>%
+  filter(rownames(.) %in% names_gr3)
+
+tabla_grupo3
+
+```
+Como vemos, Turquia destaca claramente en el sector de agricultura, podríamos considerarlo como un $\textit{outlayer}$. Respecto a la variable agricultura: su mmedia muestral es `r mean(tabla_grupo3$Agr)`, bastante superior respecto a todos los grupos y a la media muestral total, llegando casi a duplicarla.
+
+
+Por último, podemos hacer un boxplot de cada grupo respecto la variable "Agr" para ver la diferencias que presentan:
+
+
+```{r}
+
+datos = datos %>% 
+  mutate("Grupo" = case_when(
+    rownames(.) %in% names_gr1 ~ "Grupo1",
+    rownames(.) %in% names_gr2 ~ "Grupo2",
+    rownames(.) %in% names_gr3 ~ "Grupo3",
+    )) %>% 
+  relocate(Grupo, .before = Agr)
+
+
+
+boxplot1 = datos %>% 
+  ggplot() + 
+  geom_boxplot(aes(x = Grupo, y = Agr, color = Grupo)) +
+  stat_summary(aes(x = Grupo, y = Agr),
+               fun = mean, geom = "point", shape = 19, size = 1, color = "black") +
+  labs(x = "Grupo", y = "Porcentaje en agricultura", 
+       color = "Grupo") +
+  theme_bw() + 
+  theme(axis.text = element_text(face = "bold"),
+        axis.title = element_text(face = "bold"),
+        legend.title = element_text(size = 10, face = "bold")) + 
+  theme(plot.title=element_text(size=20, face='bold', color="#83CC3A"))
+  
+
+boxplot1
+
+```
+Claramente el grupo 3 presenta grandes diferencias en este sector.
+
 
 Respecto al resto de variables, podemos decir que como no están bien representadas en el plano principal, que agrupa el $93\%$ de la variación de los datos, quiere decir que estas varían muy poco en comparación a las tres variables comparadas, y por lo tanto, en general los países se agrupan en unos ciertos porcentajes.
 
-```{r Interpretacion Angel 2}
-# Vemos que aunque no se hayan tipificado los datos, parece haber una agrupación (aunque no muy clara) de los países, estos grupos serían: los países que se encuentran en la parte inferior izquierda; los países que se encuentran en la parte superior izquierd y los países que se encuentran separados en la parte derecha.
-```
+
 
 Para ver el código del estudio, visite [este repositorio de GitHub.](https://github.com/AngelAlamo/Ejercicio_PCA)
 
 
-
-
-
-
-
-Ahora vamos a realizar el mismo estudio pero con los datos tipificados, veremos que obtenemos los gráficos más acorde a los vistos en el ejemplo de teoria.
-
-En este caso, especificaremos en la función `prcomp` el parámetro `scale` considerando `scale = TRUE`, para que considere los datos estandarizados.
-
-```{r PCA tipi}
-datos_tip_pca = prcomp(datos, scale = TRUE)
-```
-
-```{r vaps tipi}
-vaps2 = get_eigenvalue(datos_tip_pca)
-vaps2
-```
-
-Como antes, es difícil determinar cuántas componentes principales necesitamos para la descripción de los datos, esta vez las tres primeras componentes tan solo explican el $74\%$ de la variación total, si quisieramos un minimo de $85\%$ como en el caso de los datos sin tipificar, necesitariamos considerar las 4 primeras componentes. Volvemos a observar el siguiente gráfico para ver de una manera más detallada el peso de estas componentes:
-
-```{r}
-fviz_eig(datos_tip_pca, addlabels = TRUE, ylim = c(0,100))
-```
-
-En este caso concluimos que necesitaremos considerar el número de cuatro componentes principales para la descripción y representación de los datos. Considerar menos seria descartar una componente que nos aporta un $11\%$ de variación, lo que se acerca mucho a su anterior con un $12.2\%$, y eliminar ambas nos deja tan solo un $62\%$ de la varaación total, que no es del todo óptimo.
-
-```{r veps tipi}
-veps2 = datos_tip_pca$rotation
-veps2
-```
-
-La primera componente principal da un peso prácticamente equitativo, exceptuando a "Fin" y "Min" con unos pesos muy bajos y destacando a "Arg" con el peso más elevado.
-
-La segunda componente principal también da un peso considerable a prácticamente todas las variables a excepción de "Arg" y "Con", en esta destacan "Min" con un gran peso positivo y "Fin" con el mayor peso negativo.
-
-En la tercera componente principal destacan sobre todo "Ene" y "Fin" con grandes pesos negativos.
-
-Finalmente en la cuarta podriamos destacar "Con" y "SSP".
-
-```{r}
-var2 = get_pca_var(datos_tip_pca)
-fviz_cos2(datos_tip_pca, choice = "var", axes = 1:4)
-```
-
-```{r circulo correlacions dim1-dim2}
-fviz_pca_var(datos_tip_pca, col.var = "contrib", repel = TRUE, axes = 1:2)
-
-```
-
-(...)
-
-```{r circulo correlacions dim1-dim3}
-fviz_pca_var(datos_tip_pca, col.var = "contrib", repel = TRUE, axes = c(1,3))
-
-```
-
-(...)
-
-```{r circulo correlacions dim1-dim4}
-fviz_pca_var(datos_tip_pca, col.var = "contrib", repel = TRUE, axes = c(1,4))
-
-```
-
-```{r circulo correlacions dim2-dim3}
-fviz_pca_var(datos_tip_pca, col.var = "contrib", repel = TRUE, axes = c(2,3))
-
-```
-
-(...)
-
-```{r circulo correlacions dim2-dim4}
-fviz_pca_var(datos_tip_pca, col.var = "contrib", repel = TRUE, axes = c(2,4))
-
-```
-
-```{r circulo correlacions dim3-dim4}
-fviz_pca_var(datos_tip_pca, col.var = "contrib", repel = TRUE, axes = c(3,4))
-
-```
-
-Por último, veamos si a partir de estas componentes principales hemos podido obtener algunas agrupaciones de países.
-
-```{r}
-autoplot(datos_tip_pca, data = datos, loadings = TRUE, loadings.colour = 'blue',
-         loadings.label = TRUE, loadings.label.size = 4)
-
-
-```
